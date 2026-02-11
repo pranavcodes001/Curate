@@ -1,0 +1,11 @@
+{
+  "by": "pg",
+  "descendants": 15,
+  "id": 12345,
+  "kids": [111, 222],
+  "score": 256,
+  "time": 1609459200,
+  "title": "An interesting HN post",
+  "type": "story",
+  "url": "https://example.com/article"
+}

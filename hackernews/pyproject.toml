@@ -1,0 +1,7 @@
+[project]
+name = "hn-clarity-backend"
+version = "0.1.0"
+description = "MVP backend for Hacker News clarity layer (MVP v1)"
+
+[tool.poetry]
+# Optional: replace with your preferred tooling

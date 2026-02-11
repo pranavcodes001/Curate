@@ -1,0 +1,30 @@
+﻿# Secrets
+.env
+**/.env
+**/.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Flutter/Dart
+.dart_tool/
+build/
+android/.gradle/
+android/app/build/
+ios/Pods/
+ios/.symlinks/
+
+# IDE
+.idea/
+.vscode/
+
+# Misc
+*.log
+.DS_Store
+
+# Local backup of nested repo
+hackernews/.git.backup/

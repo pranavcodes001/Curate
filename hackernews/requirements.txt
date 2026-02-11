@@ -1,0 +1,15 @@
+fastapi
+uvicorn[standard]
+aiohttp
+httpx
+redis
+SQLAlchemy
+pydantic
+pytest
+pytest-asyncio
+fakeredis
+email-validator
+alembic
+pydantic-settings
+PyJWT
+psycopg2-binary
