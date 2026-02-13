@@ -357,6 +357,17 @@ async def _run_loop(SessionLocal, redis_cache: RedisCache):
                     )
                     last_top_refresh = now_ts
 
+                # --- 1b. Periodic Interest Refresh (Backfill shelves) ---
+                if now_ts - last_interest_refresh >= settings.INTEREST_REFRESH_SECONDS:
+                    logger.info("Refreshing interest shelves")
+                    await _refresh_interest_stories(
+                        SessionLocal,
+                        search_client,
+                        interest_repo,
+                        story_repo,
+                    )
+                    last_interest_refresh = now_ts
+
                 # --- 2. Interest Signaling (Pressure Hook) ---
                 # Listen for pressure signals from API
                 interest_id = await redis_cache.get_next_interest_signal(timeout=1)
@@ -369,9 +380,26 @@ async def _run_loop(SessionLocal, redis_cache: RedisCache):
                             # Use watermark for efficient fetch
                             watermark = await redis_cache.get_interest_watermark(interest_id)
                             keywords = " ".join((interest.keywords or [])[:5])
-                            hits = await search_client.search(keywords, settings.INTEREST_BACKLOG_LIMIT, min_timestamp=watermark)
+                            hits = await search_client.search(
+                                keywords,
+                                settings.INTEREST_BACKLOG_LIMIT,
+                                min_timestamp=watermark,
+                            )
+                            if not hits and watermark > 0:
+                                # Fallback to a full search if watermark is too high or stale.
+                                logger.info(
+                                    "No hits with watermark=%s for interest_id=%s, retrying without watermark",
+                                    watermark,
+                                    interest_id,
+                                )
+                                hits = await search_client.search(
+                                    keywords,
+                                    settings.INTEREST_BACKLOG_LIMIT,
+                                    min_timestamp=0,
+                                )
                             
                             max_ts = watermark
+                            inserted = 0
                             for h in hits:
                                 try:
                                     hn_id = int(h.get("objectID"))
@@ -383,14 +411,32 @@ async def _run_loop(SessionLocal, redis_cache: RedisCache):
                                     from app.services.sources.hackernews.fetcher import StoryData
                                     sd = StoryData(hn_id=hn_id, title=h.get("title"), url=h.get("url"), score=h.get("points"), time=ts, raw_payload=raw)
                                     story_repo.upsert(session, sd)
-                                    interest_repo.upsert_interest_story(session, interest.id, hn_id, h.get("points"), ts)
+                                    interest_repo.upsert_interest_story(
+                                        session,
+                                        interest.id,
+                                        hn_id,
+                                        h.get("points"),
+                                        ts,
+                                    )
+                                    inserted += 1
                                 except Exception:
+                                    logger.exception(
+                                        "Failed upserting interest story interest_id=%s hn_id=%s",
+                                        interest.id,
+                                        h.get("objectID"),
+                                    )
                                     continue
                             
                             # Rotate shelf to keep it at 50
                             interest_repo.rotate_shelf(session, interest.id, max_size=settings.INTEREST_STORY_LIMIT)
                             # Update watermark
                             await redis_cache.set_interest_watermark(interest_id, max_ts)
+                            logger.info(
+                                "Interest refresh done interest_id=%s inserted=%s watermark=%s",
+                                interest_id,
+                                inserted,
+                                max_ts,
+                            )
 
                 # --- 3. Comment Signaling (Predictive Discussion) ---
                 # --- 3. Comment Signaling (Predictive Discussion) ---
