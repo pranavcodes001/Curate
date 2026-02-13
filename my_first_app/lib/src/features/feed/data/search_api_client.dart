@@ -8,7 +8,7 @@ class SearchApiClient {
 
   static const String _baseUrl = String.fromEnvironment(
     'HN_API_BASE_URL',
-    defaultValue: 'http://localhost:8000',
+    defaultValue: 'https://curate-production.up.railway.app',
   );
 
   Future<List<dynamic>> search(String query, {int? limit}) async {

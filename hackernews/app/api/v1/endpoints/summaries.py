@@ -202,16 +202,33 @@ async def generate_comment_summary(
     comment_repo = CommentRepository()
     comment = comment_repo.get_by_hn_id(session, hn_id)
     if comment is None:
-        # fetch from HN
+        # fetch from HN and backfill to DB on-demand
         client = AsyncHNClient(base_url=str(settings.HN_API_URL))
         await client.init()
         try:
             raw = await client.fetch_item(hn_id)
             if not raw or raw.get("type") != "comment":
                 raise HTTPException(status_code=404, detail="comment not found")
-            # We need a story_id to upsert a comment. For now, we can try to find it or just mock it.
-            # But the UI usually handles this for comments already in DB.
-            raise HTTPException(status_code=404, detail="comment must be in DB for summarization")
+
+            # Resolve story id by walking parents until we hit a story.
+            story_hn_id = None
+            parent_id = raw.get("parent")
+            for _ in range(10):
+                if parent_id is None:
+                    break
+                parent_raw = await client.fetch_item(int(parent_id))
+                if not parent_raw:
+                    break
+                if parent_raw.get("type") == "story":
+                    story_hn_id = int(parent_raw.get("id"))
+                    break
+                parent_id = parent_raw.get("parent")
+
+            if story_hn_id is None:
+                raise HTTPException(status_code=404, detail="comment must be in DB for summarization")
+
+            comment_repo = CommentRepository()
+            comment, _c, _u = comment_repo.upsert(session, story_hn_id, raw)
         finally:
             await client.close()
 

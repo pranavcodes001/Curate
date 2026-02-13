@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+// Premium, muted "misty steel" brand color for Curie avatar/loader.
+const Color kCurateBrand = Color(0xFF5A7E92);
+
 /// The official Mascot of Curate.
 /// A minimalist, friendly "Blob" with natural eyes.
 class CurateAvatar extends StatelessWidget {
@@ -20,7 +23,7 @@ class CurateAvatar extends StatelessWidget {
       return CurateLoader(size: size);
     }
 
-    final effectiveColor = color ?? Theme.of(context).colorScheme.primary;
+    final effectiveColor = color ?? kCurateBrand;
 
     return SizedBox(
       width: size,
@@ -111,9 +114,7 @@ class _CurateLoaderState extends State<CurateLoader>
 
   @override
   Widget build(BuildContext context) {
-    final color = widget.fullScreen
-        ? Colors.white
-        : Theme.of(context).colorScheme.primary;
+    final color = widget.fullScreen ? Colors.white : kCurateBrand;
 
     final loader = AnimatedBuilder(
       animation: _controller,

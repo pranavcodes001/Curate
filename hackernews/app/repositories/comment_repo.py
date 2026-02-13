@@ -7,6 +7,9 @@ from app.db.models.comment import Comment
 
 
 class CommentRepository:
+    def get_by_hn_id(self, session: Session, comment_hn_id: int) -> Comment | None:
+        return session.query(Comment).filter_by(comment_hn_id=comment_hn_id).one_or_none()
+
     def upsert(self, session: Session, story_hn_id: int, raw: dict) -> tuple[Comment, bool, bool]:
         now = datetime.utcnow()
         comment_hn_id = raw.get("id")

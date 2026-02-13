@@ -5,6 +5,8 @@ from app.db.session import get_session
 from app.services.auth.deps import require_user
 from app.services.ai.factory import get_ai_provider
 from app.db.models.comment import Comment
+from app.repositories.comment_repo import CommentRepository
+from app.services.sources.hackernews.client import AsyncHNClient
 from app.repositories.comment_summary_repo import CommentSummaryRepository
 from app.services.cache.comment_summary_cache import CommentSummaryCache
 from app.services.cache.redis import RedisCache
@@ -79,7 +81,34 @@ async def generate_comment_summary(
 
     row = session.query(Comment).filter_by(comment_hn_id=comment_hn_id).one_or_none()
     if row is None:
-        raise HTTPException(status_code=404, detail="comment not found")
+        client = AsyncHNClient(base_url=str(settings.HN_API_URL))
+        await client.init()
+        try:
+            raw = await client.fetch_item(comment_hn_id)
+            if not raw or raw.get("type") != "comment":
+                raise HTTPException(status_code=404, detail="comment not found")
+
+            # Resolve story id by walking parents until we hit a story.
+            story_hn_id = None
+            parent_id = raw.get("parent")
+            for _ in range(10):
+                if parent_id is None:
+                    break
+                parent_raw = await client.fetch_item(int(parent_id))
+                if not parent_raw:
+                    break
+                if parent_raw.get("type") == "story":
+                    story_hn_id = int(parent_raw.get("id"))
+                    break
+                parent_id = parent_raw.get("parent")
+
+            if story_hn_id is None:
+                raise HTTPException(status_code=404, detail="comment must be in DB for summarization")
+
+            comment_repo = CommentRepository()
+            row, _c, _u = comment_repo.upsert(session, story_hn_id, raw)
+        finally:
+            await client.close()
 
     provider = get_ai_provider()
     payload = row.raw_payload or {"id": row.comment_hn_id, "text": row.text}

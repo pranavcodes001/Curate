@@ -28,3 +28,6 @@ ios/.symlinks/
 
 # Local backup of nested repo
 hackernews/.git.backup/
+
+# Local DBs
+*.db

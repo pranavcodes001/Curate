@@ -420,16 +420,10 @@ class _StoryDetailPageState extends State<StoryDetailPage> {
               },
             ),
             const Divider(),
-            _buildStorySummaryTrigger(story.hnId),
-            if (_summaryLoading)
-              const Padding(
-                padding: EdgeInsets.only(top: 12.0),
-                child: SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-              ),
+            _buildStorySummaryTrigger(
+              story.hnId,
+              showLoadingIndicator: false,
+            ),
             if (_summary != null) _buildInlineSummaryCard(_summary!),
           ],
         ),
@@ -457,15 +451,6 @@ class _StoryDetailPageState extends State<StoryDetailPage> {
               _buildStorySummaryTrigger(story.hnId),
             ],
           ),
-          if (_summaryLoading)
-            const Padding(
-              padding: EdgeInsets.only(top: 12.0),
-              child: SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-            ),
           if (_summary != null) ...[
             const SizedBox(height: 12),
             _buildInlineSummaryCard(_summary!),
@@ -480,16 +465,10 @@ class _StoryDetailPageState extends State<StoryDetailPage> {
       children: [
         const Text('No story content available.'),
         const SizedBox(height: 8),
-        _buildStorySummaryTrigger(story.hnId),
-        if (_summaryLoading)
-          const Padding(
-            padding: EdgeInsets.only(top: 12.0),
-            child: SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
-          ),
+        _buildStorySummaryTrigger(
+          story.hnId,
+          showLoadingIndicator: false,
+        ),
         if (_summary != null) ...[
           const SizedBox(height: 12),
           _buildInlineSummaryCard(_summary!),
@@ -498,8 +477,11 @@ class _StoryDetailPageState extends State<StoryDetailPage> {
     );
   }
 
-  Widget _buildStorySummaryTrigger(String hnId) {
-    if (_summaryLoading) {
+  Widget _buildStorySummaryTrigger(
+    String hnId, {
+    bool showLoadingIndicator = true,
+  }) {
+    if (_summaryLoading && showLoadingIndicator) {
       return const SizedBox(
         width: 20,
         height: 20,
@@ -512,7 +494,7 @@ class _StoryDetailPageState extends State<StoryDetailPage> {
           ? const CurateAvatar(size: 16)
           : const Icon(Icons.check_circle, size: 16, color: Colors.green),
       label: Text(
-        _summary == null ? 'AI ✨' : 'AI Summary',
+        _summary == null ? 'AI' : 'AI Summary',
         style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
       ),
     );
@@ -546,7 +528,7 @@ class _StoryDetailPageState extends State<StoryDetailPage> {
                   : const CurateAvatar(size: 14),
               const SizedBox(width: 4),
               Text(
-                existing != null ? 'View Summary' : 'AI ✨',
+                existing != null ? 'View Summary' : 'AI',
                 style: const TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.bold,

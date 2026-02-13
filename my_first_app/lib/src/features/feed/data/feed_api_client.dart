@@ -8,7 +8,7 @@ class FeedApiClient {
 
   Future<List<dynamic>> fetchTopStories({int? limit}) async {
     final resp = await _apiClient.get(
-      '/v1/stories',
+      '/v1/stories/',
       query: limit == null ? null : {'limit': '$limit'},
       auth: false,
     );
