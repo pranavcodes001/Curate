@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../state/app_state.dart';
+import '../cache/cache_store.dart';
 
 class AuthSession {
   AuthSession._();
@@ -49,5 +50,6 @@ class AuthSession {
     await _prefs.remove(_keyRefreshToken);
     // Explicitly wipe local profile data on logout to prevent cross-account leaks
     await AppState.instance.clearUserProfile();
+    await CacheStore.instance.clear();
   }
 }

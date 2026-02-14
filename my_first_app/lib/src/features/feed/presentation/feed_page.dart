@@ -98,7 +98,7 @@ class _FeedPageState extends State<FeedPage>
     setState(() {
       _future = _searchMode
           ? _searchRepo.search(_searchController.text.trim())
-          : _fetchPrimaryFeed();
+          : _fetchPrimaryFeed(forceRefresh: true);
     });
     await _future;
   }
@@ -160,12 +160,12 @@ class _FeedPageState extends State<FeedPage>
     return _fetchPrimaryFeed();
   }
 
-  Future<List<FeedItem>> _fetchPrimaryFeed() async {
+  Future<List<FeedItem>> _fetchPrimaryFeed({bool forceRefresh = false}) async {
     debugPrint('FeedPage: _fetchPrimaryFeed started, mode=${widget.mode}');
     try {
       if (widget.mode == FeedMode.top) {
         debugPrint('FeedPage: Fetching top stories');
-        final result = await _repo.fetchTopStories();
+        final result = await _repo.fetchTopStories(forceRefresh: forceRefresh);
         AppState.instance.topStoryIds.value = result.map((e) => e.hnId).toSet();
         debugPrint('FeedPage: Found ${result.length} top stories');
         return result;
@@ -176,10 +176,10 @@ class _FeedPageState extends State<FeedPage>
         );
         if (!AuthSession.instance.isLoggedIn) {
           debugPrint('FeedPage: Not logged in, falling back to top stories');
-          return await _repo.fetchTopStories();
+          return await _repo.fetchTopStories(forceRefresh: forceRefresh);
         }
 
-        final result = await _repo.fetchInterestFeed();
+        final result = await _repo.fetchInterestFeed(forceRefresh: forceRefresh);
         debugPrint('FeedPage: Found ${result.length} interest stories');
 
         // Ensure topStoryIds is populated for badges if this is Home page
@@ -195,7 +195,7 @@ class _FeedPageState extends State<FeedPage>
       // Fallback to top stories only for completely disconnected or unauthenticated Home feed
       if (widget.mode == FeedMode.interest &&
           !AuthSession.instance.isLoggedIn) {
-        return await _repo.fetchTopStories();
+        return await _repo.fetchTopStories(forceRefresh: forceRefresh);
       }
       rethrow;
     }
